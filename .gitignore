@@ -1,0 +1,5 @@
+.idea/
+*.pyc
+__pycache__/
+bAQbI/
+babi(tmp).pkl
