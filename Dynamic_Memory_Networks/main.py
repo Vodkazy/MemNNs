@@ -53,10 +53,10 @@ if __name__ == '__main__':
     argparser.add_argument('--train', type=bool, default=True)
     argparser.add_argument('--valid', type=bool, default=True)
     argparser.add_argument('--test', type=bool, default=True)
-    argparser.add_argument('--early_stop', type=bool, default=False)
+    argparser.add_argument('--early_stop', type=bool, default=True)
     argparser.add_argument('--resume', action='store_true', default=False)
     argparser.add_argument('--save', action='store_true', default=False)
-    argparser.add_argument('--device', default=torch.device('cuda:2' if torch.cuda.is_available() else 'cpu'))
+    argparser.add_argument('--device', default=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'))
     """
     模型超参数列表：
         lr              学习率
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         set_num         文章集序号(1~20)
         max_alen        answer模块 答案的最大长度
     """
-    argparser.add_argument('--lr', type=float, default=0.003)
+    argparser.add_argument('--lr', type=float, default=0.0003)
     argparser.add_argument('--lr_decay', type=float, default=1.0)
     argparser.add_argument('--wd', type=float, default=0)
     argparser.add_argument('--grad_max_norm', type=int, default=5)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     dataset = pickle.load(open(args.data_path, 'rb'))
     dataset.config.__dict__.update(args.__dict__)
     args.__dict__.update(dataset.config.__dict__)
-    # printf(args.__dict__)
+    printf(args.__dict__)
 
     # 开始训练/验证/测试
     print('Begin running ...')

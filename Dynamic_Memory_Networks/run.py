@@ -28,7 +28,7 @@ def train(model, dataset, epoch, set_num, device):
     run(model, dataset, epoch, 'tr', set_num, device)
 
 
-def valid(model, dataset, epoch, set_num, device, best_metric, early_stop):
+def valid(model, dataset, epoch, set_num, device, best_metric):
     """
     验证模型
     :param model:       模型
@@ -39,6 +39,7 @@ def valid(model, dataset, epoch, set_num, device, best_metric, early_stop):
     :param best_metric: 当前最佳指标
     :return:            本轮过后的最佳指标
     """
+    early_stop = False
     if epoch == -1:
         metric = run(model, dataset, 0, 'va', set_num, device)
     else:
@@ -285,7 +286,7 @@ def experiment(model, dataset, set_num, device):
             train(model, dataset, epoch, set_num, device)
 
             if model.config.valid:
-                best_metric, early_stop = valid(model, dataset, epoch, set_num, device, best_metric, early_stop)
+                best_metric, early_stop = valid(model, dataset, epoch, set_num, device, best_metric)
 
             if model.config.test:
                 test(model, dataset, epoch, set_num, device)
@@ -295,7 +296,7 @@ def experiment(model, dataset, set_num, device):
         print('===== Load Validation/Testing =====')
         if model.config.resume or model.config.train:
             model.load_checkpoint()
-        valid(model, dataset, -1, set_num, device, best_metric, early_stop)
+        valid(model, dataset, -1, set_num, device, best_metric)
         test(model, dataset, -1, set_num, device)
         print()
 
