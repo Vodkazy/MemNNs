@@ -6,7 +6,6 @@
   @ File     : model .py
   @ Software : PyCharm
 """
-import os
 
 import numpy as np
 import torch
@@ -54,11 +53,14 @@ class DMN(nn.Module):
         gates = torch.transpose(torch.stack(gates), 0, 1).contiguous()
         # 交换维度 变为 batch_size * max_episode * s_len+1
         outputs = self.answer_module(q_rep, memory)
-        # print('memory', memory.size())
-        # print('outputs', outputs.size())
         return outputs, gates
 
     def model_params(self, debug=True):
+        """
+        查看模型参数
+        :param debug: 是否debug，debug的话打印出求不求导
+        :return:
+        """
         print('model parameters: ', end='')
         params = []
         total_size = 0
@@ -79,6 +81,11 @@ class DMN(nn.Module):
         return params
 
     def get_regloss(self, weight_decay=None):
+        """
+        计算带有权重衰减率的正则化损失
+        :param weight_decay:
+        :return:
+        """
         if weight_decay is None:
             weight_decay = self.config.wd
         reg_loss = 0
@@ -88,61 +95,42 @@ class DMN(nn.Module):
         return reg_loss * weight_decay
 
     def decay_lr(self, lr_decay=None):
+        """
+        衰减学习率
+        :param lr_decay:
+        :return:
+        """
         if lr_decay is None:
             lr_decay = self.config.lr_decay
         self.config.lr /= lr_decay
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = self.config.lr
-        print('\tlearning rate decay to %.3f' % self.config.lr)
-
-    def get_metrics(self, outputs, targets, multiple=False):
-        if not multiple:
-            outputs = outputs[:, 0, :]
-            targets = targets[:, 0]
-
-            max_idx = torch.max(outputs, 1)[1].data.cpu().numpy()
-            outputs_topk = torch.topk(outputs, 3)[1].data.cpu().numpy()
-            targets = targets.data.cpu().numpy()
-
-            acc = np.mean([float(k == tk[0]) for (k, tk)
-                           in zip(targets, outputs_topk)]) * 100
-        else:
-            topk_list = []
-            target_list = []
-            o_outputs = outputs[:]
-            o_targets = targets[:]
-            for idx in range(outputs.size(1)):
-                outputs = o_outputs[:, idx, :]
-                targets = o_targets[:, idx]
-                max_idx = torch.max(outputs, 1)[1].data.numpy()
-                outputs_topk = torch.topk(outputs, 3)[1].data.numpy()
-                targets = targets.data.numpy()
-
-                topk_list.append(outputs_topk)
-                target_list.append(targets)
-
-            acc = np.array([1.0 for _ in range(outputs.size(0))])
-            for target, topk in zip(target_list, topk_list):
-                acc *= np.array([float(k == tk[0] or k == -100) \
-                                 for (k, tk) in zip(target, topk)])
-                # print(acc)
-            acc = np.mean(acc) * 100
-
-        return acc
+        print('\tlearning rate decay to %.4f' % self.config.lr)
 
     def save_checkpoint(self, state, filename=None):
+        """
+        保存模型
+        :param state:
+        :param filename:
+        :return:
+        """
         if filename is None:
             filename = (self.config.checkpoint_dir + \
-                        self.config.model_name + str(self.set_num) + '.pth')
+                        self.config.model_name + '_' + str(self.set_num) + '.pth')
         else:
             filename = self.config.checkpoint_dir + filename
         print('\t=> save checkpoint %s' % filename)
         torch.save(state, filename)
 
     def load_checkpoint(self, filename=None):
+        """
+        加载模型
+        :param filename:
+        :return:
+        """
         if filename is None:
             filename = (self.config.checkpoint_dir + \
-                        self.config.model_name + str(self.set_num) + '.pth')
+                        self.config.model_name + '_' + str(self.set_num) + '.pth')
         else:
             filename = self.config.checkpoint_dir + filename
         print('\t=> load checkpoint %s' % filename)
@@ -150,14 +138,3 @@ class DMN(nn.Module):
         self.load_state_dict(checkpoint['state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         # self.config = checkpoint['config']
-
-    # def load_model(self, load_model_path, device):
-    #     if os.path.exists(load_model_path):
-    #         self.load_state_dict(torch.load(load_model_path, map_location=device))
-    #         self.to(device)
-    #         print("Load over !")
-    #     else:
-    #         print("No such file !")
-    #
-    # def save_model(self, save_model_path):
-    #     torch.save(self.state_dict(), save_model_path)

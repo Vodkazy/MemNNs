@@ -7,7 +7,6 @@
   @ Software : PyCharm
 """
 import argparse
-import os
 import pickle
 import warnings
 
@@ -16,9 +15,16 @@ import torch
 from config import Config
 from dataset import Dataset
 from model import DMN
-from run import run_experiment
+from run import experiment
 
 warnings.filterwarnings("ignore")
+
+
+def printf(x):
+    import pprint
+    pp = lambda x: pprint.PrettyPrinter().pprint(x)
+    pp(x)
+
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
@@ -29,29 +35,28 @@ if __name__ == '__main__':
         checkpoint_dir  断点路径
         batch_size      批处理大小
         epoch           迭代次数
+        print_step      每多少步打印一次
         train           是否训练
         valid           是否验证
         test            是否测试
         early_stop      是否提前停止
         resume          是否从断点唤醒
         save            是否保存模型
-        print_step      每多少步打印一次
+        device          默认训练设备
     """
-    argparser.add_argument('--data_path', type=str, default='./data/babi(tmp).pkl')
-    argparser.add_argument('--model_name', type=str, default='m')
+    argparser.add_argument('--data_path', type=str, default='./data/babi.pkl')
+    argparser.add_argument('--model_name', type=str, default='model')
     argparser.add_argument('--checkpoint_dir', type=str, default='./results/')
-    argparser.add_argument('--load_model_path', type=str, default="./results/model.pth")
-    argparser.add_argument('--save_model_path', type=str, default="./results/model.pth")
     argparser.add_argument('--batch_size', type=int, default=32)
     argparser.add_argument('--epoch', type=int, default=100)
-    argparser.add_argument('--train', type=int, default=1)
-    argparser.add_argument('--valid', type=int, default=1)
-    argparser.add_argument('--test', type=int, default=1)
-    argparser.add_argument('--early_stop', type=int, default=0)
+    argparser.add_argument('--print_step', type=float, default=128)
+    argparser.add_argument('--train', type=bool, default=True)
+    argparser.add_argument('--valid', type=bool, default=True)
+    argparser.add_argument('--test', type=bool, default=True)
+    argparser.add_argument('--early_stop', type=bool, default=False)
     argparser.add_argument('--resume', action='store_true', default=False)
     argparser.add_argument('--save', action='store_true', default=False)
-    argparser.add_argument('--print_step', type=float, default=128)
-    argparser.add_argument('--device', default=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
+    argparser.add_argument('--device', default=torch.device('cuda:2' if torch.cuda.is_available() else 'cpu'))
     """
     模型超参数列表：
         lr              学习率
@@ -74,7 +79,7 @@ if __name__ == '__main__':
         set_num         文章集序号(1~20)
         max_alen        answer模块 答案的最大长度
     """
-    argparser.add_argument('--lr', type=float, default=0.0003)
+    argparser.add_argument('--lr', type=float, default=0.003)
     argparser.add_argument('--lr_decay', type=float, default=1.0)
     argparser.add_argument('--wd', type=float, default=0)
     argparser.add_argument('--grad_max_norm', type=int, default=5)
@@ -95,23 +100,21 @@ if __name__ == '__main__':
     argparser.add_argument('--max_alen', type=int, default=2)
     args = argparser.parse_args()
 
-    if not os.path.exists('./results'):
-        os.makedirs('./results')
-
-    print('### load dataset')
+    # 加载数据
+    print('Load dataSet ...')
     config = Config()
     dataset = Dataset(config)
+    if not config.load_preprocess:
+        dataset.preprocess()
     dataset = pickle.load(open(args.data_path, 'rb'))
     dataset.config.__dict__.update(args.__dict__)
     args.__dict__.update(dataset.config.__dict__)
-    # import pprint
-    # pp = lambda x: pprint.PrettyPrinter().pprint(x)
-    # pp(args.__dict__)
+    # printf(args.__dict__)
 
-    # for set_num in range(args.set_num, min(args.set_num + 1, 21)):  # set_num区间：1~20
+    # 开始训练/验证/测试
+    print('Begin running ...')
     for set_num in range(1, 21):  # set_num区间：1~20
-        # print('\n[QA set %d]' % (set_num))
-        model = DMN(args, dataset.idx2vec, set_num).to(args.device)
-        run_experiment(model, dataset, set_num, args.device)
-
-    print('### end of experiment')
+        print('\n[QA set %d]' % set_num)
+        model = DMN(args, dataset.idx2vec, set_num)
+        model = model.to(args.device)
+        experiment(model, dataset, set_num, args.device)

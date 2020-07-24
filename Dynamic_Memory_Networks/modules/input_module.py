@@ -22,8 +22,8 @@ class InputModule(nn.Module):
         self.s_rnn = nn.GRU(self.s_rnn_idim, config.s_rnn_hdim, batch_first=True)
 
     def init_rnn_h(self, batch_size):
-        return Variable(torch.zeros(
-            self.config.s_rnn_ln * 1, batch_size, self.config.s_rnn_hdim)).to(self.config.device)
+        return Variable(torch.zeros(self.config.s_rnn_ln * 1, batch_size, self.config.s_rnn_hdim)).to(
+            self.config.device)
 
     def forward(self, stories, s_lens):
         """
