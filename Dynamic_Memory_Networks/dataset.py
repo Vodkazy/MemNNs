@@ -29,6 +29,10 @@ class MyDataset(DT):
         self.dataset = dataset
         self.set_num = set_num
         self.config = config
+        if set_num == 8:
+            self.config.max_alen = 3
+        else:
+            self.config.max_alen = config.max_alen
         self.word2idx = word2idx
 
     def __len__(self):
@@ -39,9 +43,8 @@ class MyDataset(DT):
         story = data_item[0]
         question = data_item[1]
         answer = data_item[2]
-        if len(answer) < 1:
-            while len(answer) != self.config.max_alen:
-                answer.append(-100)
+        while len(answer) != self.config.max_alen:
+            answer.append(-100)
         sup_fact = data_item[3]
         while len(sup_fact) < self.config.max_episode:
             sup_fact.append(self.config.max_sentnum[self.set_num] + 1)
@@ -50,6 +53,8 @@ class MyDataset(DT):
         while len(s_len) != self.config.max_sentnum[self.set_num]:
             s_len.append(0)
         q_len = [idx + 1 for idx, val in enumerate(question) if val == self.word2idx['?']][0]
+        # print(story, question, answer, sup_fact,
+        #         s_len, q_len, e_len)
         return (story, question, answer, sup_fact,
                 s_len, q_len, e_len)
 

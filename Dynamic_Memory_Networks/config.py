@@ -37,5 +37,5 @@ class Config(object):
         self.max_qlen = {}
         self.max_episode = 10  # 预处理数据集时使用，以main中的设置为准
         self.word_vocab_size = 0
-        self.load_preprocess = False
+        self.load_preprocess = True
         self.preprocess_path = './data/babi.pkl'

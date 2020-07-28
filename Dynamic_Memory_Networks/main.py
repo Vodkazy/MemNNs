@@ -9,7 +9,7 @@
 import argparse
 import pickle
 import warnings
-
+import gc
 import torch
 
 from config import Config
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     argparser.add_argument('--early_stop', type=bool, default=True)
     argparser.add_argument('--resume', action='store_true', default=False)
     argparser.add_argument('--save', action='store_true', default=False)
-    argparser.add_argument('--device', default=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu'))
+    argparser.add_argument('--device', default=torch.device('cuda:2' if torch.cuda.is_available() else 'cpu'))
     """
     模型超参数列表：
         lr              学习率
@@ -109,12 +109,13 @@ if __name__ == '__main__':
     dataset = pickle.load(open(args.data_path, 'rb'))
     dataset.config.__dict__.update(args.__dict__)
     args.__dict__.update(dataset.config.__dict__)
-    printf(args.__dict__)
+    # printf(args.__dict__)
 
     # 开始训练/验证/测试
     print('Begin running ...')
-    for set_num in range(1, 21):  # set_num区间：1~20
+    for set_num in range(8, 21):  # set_num区间：1~20
         print('\n[QA set %d]' % set_num)
         model = DMN(args, dataset.idx2vec, set_num)
         model = model.to(args.device)
         experiment(model, dataset, set_num, args.device)
+        gc.collect()
